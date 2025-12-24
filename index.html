@@ -712,8 +712,24 @@
         .tier-section:nth-child(2) { animation-delay: 0.1s; }
         .tier-section:nth-child(3) { animation-delay: 0.2s; }
 
+        #mctiers-section {
+            border-color: rgba(236, 72, 153, 0.15);
+            box-shadow: 0 0 40px rgba(236, 72, 153, 0.15), 0 0 20px rgba(236, 72, 153, 0.1);
+        }
+
+        #subtiers-section {
+            border-color: rgba(59, 130, 246, 0.15);
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.15), 0 0 20px rgba(59, 130, 246, 0.1);
+        }
+
+        #pvptiers-section {
+            border-color: rgba(249, 115, 22, 0.15);
+            box-shadow: 0 0 40px rgba(249, 115, 22, 0.15), 0 0 20px rgba(249, 115, 22, 0.1);
+        }
+
         .tier-section.shieldless {
             border-color: rgba(234, 179, 8, 0.15);
+            box-shadow: 0 0 40px rgba(234, 179, 8, 0.15), 0 0 20px rgba(234, 179, 8, 0.1);
         }
 
         .section-header {
@@ -746,6 +762,11 @@
             box-shadow: 0 0 25px rgba(59, 130, 246, 0.7);
         }
 
+        #pvptiers-section .section-indicator {
+            background: #f97316; /* orange */
+            box-shadow: 0 0 25px rgba(249, 115, 22, 0.7);
+        }
+
         .tier-section.shieldless .section-indicator {
             background: #eab308; /* yellow */
             box-shadow: 0 0 25px rgba(234, 179, 8, 0.7);
@@ -765,6 +786,10 @@
 
         #subtiers-section .section-title {
             text-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+        }
+
+        #pvptiers-section .section-title {
+            text-shadow: 0 0 20px rgba(249, 115, 22, 0.6);
         }
 
         #shieldless-section .section-title {
@@ -1238,6 +1263,17 @@
                         <div class="tier-grid" id="subtiers-grid"></div>
                     </div>
 
+                    <!-- PVP Tiers Section -->
+                    <div class="tier-section glass" id="pvptiers-section" style="display: none;">
+                        <div class="section-header">
+                            <div class="section-title-wrapper">
+                                <div class="section-indicator"></div>
+                                <h3 class="section-title">PVPTiers Rankings</h3>
+                            </div>
+                        </div>
+                        <div class="tier-grid" id="pvptiers-grid"></div>
+                    </div>
+
                     <!-- Shieldless Section -->
                     <div class="tier-section glass shieldless" id="shieldless-section" style="display: none;">
                         <div class="section-header">
@@ -1409,6 +1445,7 @@
             if (game === 'diacrystal') displayName = 'Diacrystal';
             else if (game === 'pot') displayName = 'Dia Pot';
             else if (game === 'nethpot') displayName = 'Neth Pot';
+            else if (game === 'crystal') displayName = 'Crystal';
             else displayName = game.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
             let iconUrl;
@@ -1417,6 +1454,17 @@
                 iconUrl = `tiers/mctiers/${gameIcon}.svg`;
             } else if (platform === 'subtiers') {
                 iconUrl = `tiers/subtiers/${game}.svg`;
+            } else if (platform === 'pvptiers') {
+                // Map PVP Tiers gamemodes to MCTiers icons
+                const gamemodeMap = {
+                    'pot': 'pot',
+                    'uhc': 'uhc',
+                    'crystal': 'vanilla',
+                    'axe': 'axe',
+                    'sword': 'sword'
+                };
+                const gameIcon = gamemodeMap[game] || game;
+                iconUrl = `tiers/mctiers/${gameIcon}.svg`;
             } else {
                 iconUrl = `tiers/mctiers/uhc.svg`;
             }
@@ -1496,17 +1544,21 @@
                     document.querySelector('.player-stats').classList.remove('golden');
                 }
 
-                // Fetch ALL THREE APIs in parallel (including Shieldless UHC)
-                const [mctiersRes, subtiersRes, shieldlessRes] = await Promise.all([
+                // Fetch ALL FOUR APIs in parallel (including Shieldless UHC and PVP Tiers)
+                const [mctiersRes, subtiersRes, shieldlessRes, pvptiersRes] = await Promise.all([
                     fetch(`https://mctiers.com/api/profile/${uuid}`).then(r => r.ok ? r.json() : null).catch(() => null),
                     fetch(`https://subtiers.net/api/profile/${uuid}`).then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(`https://corsproxy.io/?${encodeURIComponent(`https://www.shieldlessuhc.xyz/api/profile/${uuid}`)}`).then(r => r.ok ? r.json() : null).catch(() => null)
+                    fetch(`https://corsproxy.io/?${encodeURIComponent(`https://www.shieldlessuhc.xyz/api/profile/${uuid}`)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(`https://corsproxy.io/?${encodeURIComponent(`https://pvptiers.com/api/profile/${uuid}`)}`).then(r => r.ok ? r.json() : null).catch(() => null)
                 ]);
 
                 let totalRanked = 0;
                 let listsTracked = 0;
                 let foundAnyData = false;
                 let tierValues = []; // Track all tier values for averaging
+
+                // Debug logging for PVP Tiers
+                console.log('PVP Tiers Response:', pvptiersRes);
 
                 // Process MCTiers
                 const mctSection = document.getElementById('mctiers-section');
@@ -1600,6 +1652,58 @@
                     subSection.style.display = 'none';
                 }
 
+                // Process PVP Tiers
+                const pvpSection = document.getElementById('pvptiers-section');
+                const pvpGrid = document.getElementById('pvptiers-grid');
+                pvpSection.querySelector('.tier-info-container')?.remove(); // Clear previous
+
+                console.log('PVP Tiers - Full Response:', pvptiersRes);
+                console.log('PVP Tiers - Has rankings:', pvptiersRes && pvptiersRes.rankings);
+                console.log('PVP Tiers - Rankings keys:', pvptiersRes && pvptiersRes.rankings ? Object.keys(pvptiersRes.rankings) : 'none');
+
+                if (pvptiersRes && pvptiersRes.rankings && Object.keys(pvptiersRes.rankings).length > 0) {
+                    const keys = Object.keys(pvptiersRes.rankings);
+                    const cards = keys.map(k => {
+                        const ranking = pvptiersRes.rankings[k];
+                        // Add tier to average calculation
+                        const numericTier = tierToNumeric(ranking.tier, ranking.pos);
+                        if (numericTier > 0) tierValues.push(numericTier);
+                        return createTierCard(k, ranking, 'pvptiers');
+                    }).filter(card => card !== '');
+                    if (cards.length > 0) {
+                        pvpSection.style.display = 'block';
+                        pvpGrid.innerHTML = cards.join('');
+
+                        if (pvptiersRes.overall !== undefined && pvptiersRes.points !== undefined) {
+                            const infoContainer = document.createElement('div');
+                            infoContainer.className = 'tier-info-container';
+                            infoContainer.innerHTML = `
+                                <div class="tier-info-item">
+                                    <span class="tier-info-label">Rank</span>
+                                    <span class="tier-info-value">#${pvptiersRes.overall.toLocaleString()}</span>
+                                </div>
+                                <div class="tier-info-item">
+                                    <span class="tier-info-label">Points</span>
+                                    <span class="tier-info-value">${pvptiersRes.points}</span>
+                                </div>
+                            `;
+                            pvpSection.querySelector('.section-header').appendChild(infoContainer);
+                        }
+
+                        totalRanked += cards.length;
+                        listsTracked++;
+                        foundAnyData = true;
+                        if (!mctiersRes && !subtiersRes) {
+                            document.getElementById('player-name').textContent = pvptiersRes.name;
+                            setRegion(pvptiersRes.region);
+                        }
+                    } else {
+                        pvpSection.style.display = 'none';
+                    }
+                } else {
+                    pvpSection.style.display = 'none';
+                }
+
                 // Process Shieldless UHC
                 const shieldSection = document.getElementById('shieldless-section');
                 const shieldGrid = document.getElementById('shieldless-grid');
@@ -1625,7 +1729,7 @@
                     foundAnyData = true;
 
                     // Set player name/region from shieldless if we don't have it from other sources
-                    if (!mctiersRes && !subtiersRes) {
+                    if (!mctiersRes && !subtiersRes && !pvptiersRes) {
                         document.getElementById('player-name').textContent = shieldlessRes.minecraft_username || input;
                         setRegion(shieldlessRes.region || 'N/A');
                     }
