@@ -796,6 +796,20 @@
             text-shadow: 0 0 20px rgba(234, 179, 8, 0.6);
         }
 
+        #tiertests-section {
+            border-color: rgba(139, 92, 246, 0.15);
+            box-shadow: 0 0 40px rgba(139, 92, 246, 0.15), 0 0 20px rgba(139, 92, 246, 0.1);
+        }
+
+        #tiertests-section .section-indicator {
+            background: #8b5cf6;
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.7);
+        }
+
+        #tiertests-section .section-title {
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+        }
+
         .tier-info-container {
             display: flex;
             gap: 1rem;
@@ -1171,6 +1185,7 @@
             </h1>
             <p class="hero-subtitle">
                 A unified dashboard for Minecraft 1.9+ PvP tiers across multiple tierlists.<br>
+                View your rankings from MCTiers, SubTiers, Shieldless UHC, PVPTiers, and TierTests all in one place.
             </p>
             <div class="search-container">
                 <form class="search-form" id="hero-search-form">
@@ -1184,11 +1199,12 @@
             </div>
 
             <div class="badges">
-                <span class="badge">MCTiers</span>
-                <span class="badge">SubTiers</span>
-                <span class="badge">Shieldless UHC</span>
-                <span class="badge">PVPTiers</span>
-            </div>
+                    <span class="badge">MCTiers</span>
+                    <span class="badge">SubTiers</span>
+                    <span class="badge">Shieldless UHC</span>
+                    <span class="badge">PVPTiers</span>
+                    <span class="badge">TierTests</span>
+                </div>
         </section>
 
         <!-- Results Section (hidden initially) -->
@@ -1272,6 +1288,17 @@
                         <div class="tier-grid" id="pvptiers-grid"></div>
                     </div>
 
+                    <!-- TierTests Section -->
+                    <div class="tier-section glass" id="tiertests-section" style="display: none;">
+                        <div class="section-header">
+                            <div class="section-title-wrapper">
+                                <div class="section-indicator"></div>
+                                <h3 class="section-title">TierTests Rankings</h3>
+                            </div>
+                        </div>
+                        <div class="tier-grid" id="tiertests-grid"></div>
+                    </div>
+
                     <!-- Shieldless Section -->
                     <div class="tier-section glass shieldless" id="shieldless-section" style="display: none;">
                         <div class="section-header">
@@ -1353,6 +1380,52 @@
             if (tier === 4) return pos === 0 ? 'tier-ht4' : 'tier-lt4';
             if (tier === 5) return pos === 0 ? 'tier-ht5' : 'tier-lt5';
             return 'tier-default';
+        }
+
+        // TierTests tier conversion functions
+        function getTierTestsClass(tier) {
+            const t = tier.toUpperCase();
+            if (t === 'S') return 'tier-t1';
+            if (t === 'A_PLUS') return 'tier-ht2';
+            if (t === 'A_MINUS') return 'tier-lt2';
+            if (t === 'B_PLUS') return 'tier-ht3';
+            if (t === 'B_MINUS') return 'tier-lt3';
+            if (t === 'C_PLUS') return 'tier-ht4';
+            if (t === 'C_MINUS') return 'tier-lt4';
+            if (t === 'D_PLUS') return 'tier-ht5';
+            if (t === 'D_MINUS') return 'tier-lt5';
+            if (t === 'F') return 'tier-lt5';
+            return 'tier-default';
+        }
+
+        function formatTierTestsTier(tier) {
+            const t = tier.toUpperCase();
+            if (t === 'S') return 'S';
+            if (t === 'A_PLUS') return 'A+';
+            if (t === 'A_MINUS') return 'A-';
+            if (t === 'B_PLUS') return 'B+';
+            if (t === 'B_MINUS') return 'B-';
+            if (t === 'C_PLUS') return 'C+';
+            if (t === 'C_MINUS') return 'C-';
+            if (t === 'D_PLUS') return 'D+';
+            if (t === 'D_MINUS') return 'D-';
+            if (t === 'F') return 'F';
+            return tier;
+        }
+
+        function tierTestsToNumeric(tier) {
+            const t = tier.toUpperCase();
+            if (t === 'S') return 10;
+            if (t === 'A_PLUS') return 9;
+            if (t === 'A_MINUS') return 8;
+            if (t === 'B_PLUS') return 7;
+            if (t === 'B_MINUS') return 6;
+            if (t === 'C_PLUS') return 5;
+            if (t === 'C_MINUS') return 4;
+            if (t === 'D_PLUS') return 3;
+            if (t === 'D_MINUS') return 2;
+            if (t === 'F') return 1;
+            return 0;
         }
 
         // Set region with appropriate color class
@@ -1442,7 +1515,7 @@
             let displayName = game;
             if (game === 'diacrystal') displayName = 'Diacrystal';
             else if (game === 'pot') displayName = 'Dia Pot';
-            else if (game === 'nethpot') displayName = 'Neth Pot';
+            else if (game === 'neth_pot' || game === 'nethpot' || game === 'neth pot' || game === 'neth') displayName = 'Neth Pot';
             else if (game === 'crystal') displayName = 'Crystal';
             else displayName = game.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
@@ -1459,7 +1532,11 @@
                     'uhc': 'uhc',
                     'crystal': 'vanilla',
                     'axe': 'axe',
-                    'sword': 'sword'
+                    'sword': 'sword',
+                    'smp': 'pearl',
+                    'neth_pot': 'nethop',
+                    'neth': 'nethop',
+                    'nethpot': 'nethop'
                 };
                 const gameIcon = gamemodeMap[game] || game;
                 iconUrl = `tiers/mctiers/${gameIcon}.svg`;
@@ -1520,6 +1597,9 @@
                     uuid = playerDbData.data.player.raw_id;
                 }
 
+                // Create dashed UUID for APIs that require it (like TierTests)
+                const dashedUuid = uuid.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+
                 // Set avatar immediately
                 document.getElementById('player-avatar').src = `https://skins.mcstats.com/bust/${uuid}`;
                 document.getElementById('player-name').textContent = input;
@@ -1542,12 +1622,13 @@
                     document.querySelector('.player-stats').classList.remove('golden');
                 }
 
-                // Fetch ALL FOUR APIs in parallel (including Shieldless UHC and PVP Tiers)
-                const [mctiersRes, subtiersRes, shieldlessRes, pvptiersRes] = await Promise.all([
+                // Fetch ALL FIVE APIs in parallel (including Shieldless UHC, PVP Tiers, and TierTests)
+                const [mctiersRes, subtiersRes, shieldlessRes, pvptiersRes, tiertestsRes] = await Promise.all([
                     fetch(`https://mctiers.com/api/profile/${uuid}`).then(r => r.ok ? r.json() : null).catch(() => null),
                     fetch(`https://subtiers.net/api/profile/${uuid}`).then(r => r.ok ? r.json() : null).catch(() => null),
                     fetch(`https://corsproxy.io/?${encodeURIComponent(`https://www.shieldlessuhc.xyz/api/profile/${uuid}`)}`).then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(`https://corsproxy.io/?${encodeURIComponent(`https://pvptiers.com/api/profile/${uuid}`)}`).then(r => r.ok ? r.json() : null).catch(() => null)
+                    fetch(`https://corsproxy.io/?${encodeURIComponent(`https://pvptiers.com/api/profile/${uuid}`)}`).then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch(`https://public.tiertests.com/api/v1/tiers/${dashedUuid}`).then(r => r.ok ? r.json() : null).catch(() => null)
                 ]);
 
                 let totalRanked = 0;
@@ -1555,8 +1636,10 @@
                 let foundAnyData = false;
                 let tierValues = []; // Track all tier values for averaging
 
-                // Debug logging for PVP Tiers
+                // Debug logging for APIs
                 console.log('PVP Tiers Response:', pvptiersRes);
+                console.log('TierTests Response:', tiertestsRes);
+                console.log('TierTests UUID used:', dashedUuid);
 
                 // Process MCTiers
                 const mctSection = document.getElementById('mctiers-section');
@@ -1700,6 +1783,56 @@
                     }
                 } else {
                     pvpSection.style.display = 'none';
+                }
+
+                // Process TierTests
+                const tierTestsSection = document.getElementById('tiertests-section');
+                const tierTestsGrid = document.getElementById('tiertests-grid');
+                tierTestsSection.querySelector('.tier-info-container')?.remove();
+
+                if (tiertestsRes && Array.isArray(tiertestsRes) && tiertestsRes.length > 0) {
+                    const cards = tiertestsRes.map(entry => {
+                        const numericTier = tierTestsToNumeric(entry.tier);
+                        if (numericTier > 0) tierValues.push(numericTier);
+
+                        const gameMode = entry.gamemode.toLowerCase();
+                        const tierClass = getTierTestsClass(entry.tier);
+                        const tierDisplay = formatTierTestsTier(entry.tier);
+
+                        // Map gamemode names to icon files
+                        const gamemodeIconMap = {
+                            'sword': 'sword',
+                            'neth': 'nethop',
+                            'pot': 'pot',
+                            'uhc': 'uhc',
+                            'crystal': 'vanilla',
+                            'axe': 'axe',
+                            'smp': 'pearl'
+                        };
+                        const iconName = gamemodeIconMap[gameMode] || gameMode;
+                        let iconUrl = `tiers/mctiers/${iconName}.svg`;
+
+                        return `
+                            <div class="tier-card">
+                                <img src="${iconUrl}" alt="${entry.gamemode}" class="tier-icon" onerror="this.src='tiers/mctiers/sword.svg'">
+                                <div class="tier-info">
+                                    <div class="tier-name">${entry.gamemode}</div>
+                                </div>
+                                <div class="tier-badge ${tierClass}">
+                                    <span class="tier-current">${tierDisplay}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    tierTestsSection.style.display = 'block';
+                    tierTestsGrid.innerHTML = cards;
+
+                    totalRanked += tiertestsRes.length;
+                    listsTracked++;
+                    foundAnyData = true;
+                } else {
+                    tierTestsSection.style.display = 'none';
                 }
 
                 // Process Shieldless UHC
